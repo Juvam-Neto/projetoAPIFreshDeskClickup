@@ -1,0 +1,4 @@
+/vendor/
+.env
+/log/logs.txt
+composer*
