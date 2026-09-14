@@ -50,6 +50,7 @@ class ClickUp
         //Não achou a task em nenhuma página retornada pela api do clickup
         return false;
     }
+    
     public function criarTask($id, $titulo, $descricaoDetalhada)
     {
         $task = ["name" => "#{$id} - $titulo", "description" => "N° Chamado no FreshDesk: $id\n\nDescrição:\n$descricaoDetalhada", "status" => "backlog"];
