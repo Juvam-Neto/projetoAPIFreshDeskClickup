@@ -33,7 +33,8 @@ foreach($chamadosAbertos as $chamado){
 
         $clickUP->criarTask(
             $chamado['id'],
-            $chamado['subject']
+            $chamado['subject'],
+            $chamado['description_text'] 
         );
         $contadorTaskCriada++;
         fwrite($arquivoLog, "Task de n° - " . $chamado['id'] . " criada com sucesso!\n");

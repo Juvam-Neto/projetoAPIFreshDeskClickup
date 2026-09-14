@@ -10,41 +10,49 @@ class ClickUp
     {
         $this->apiKeyClickUp = $_ENV['CLICKUP_API_KEY'];
         $this->listId = $_ENV['CLICKUP_LIST_ID'];
-
     }
 
     public function existeTask($id)
     {
-        $curl = curl_init();
+        $pagina = 0;
+        while (true) {
+            $curl = curl_init();
 
-        curl_setopt_array($curl, [
-            CURLOPT_URL => "https://api.clickup.com/api/v2/list/{$this->listId}/task",
-            CURLOPT_RETURNTRANSFER => true,
-            CURLOPT_HTTPHEADER => [
-                "Authorization: {$this->apiKeyClickUp}"
-            ]
-        ]);
+            curl_setopt_array($curl, [
+                CURLOPT_URL => "https://api.clickup.com/api/v2/list/{$this->listId}/task?page={$pagina}",
+                CURLOPT_RETURNTRANSFER => true,
+                CURLOPT_HTTPHEADER => [
+                    "Authorization: {$this->apiKeyClickUp}"
+                ]
+            ]);
 
-        $resposta = curl_exec($curl);
+            $resposta = curl_exec($curl);
 
-        curl_close($curl);
+            curl_close($curl);
 
 
-        $tarefas = json_decode($resposta, true);
+            $tarefas = json_decode($resposta, true);
 
-        //Varendo as tasks para ver se tem aquele id
-        foreach ($tarefas['tasks'] as $task) {
-
-            if (str_contains($task['name'], "#{$id} -")) {
-                return true;
+            //Significa que acabaram as tasks em todas páginas
+            if(empty($tarefas['tasks'])){
+                break;
             }
+
+            foreach ($tarefas['tasks'] as $task) {
+
+                if (str_contains($task['name'], "#{$id} -")) {
+                    return true;
+                }
+            }
+            $pagina++;
         }
 
+        //Não achou a task em nenhuma página retornada pela api do clickup
         return false;
     }
-    public function criarTask($id, $descricao)
+    public function criarTask($id, $titulo, $descricaoDetalhada)
     {
-        $task = ["name" => "#{$id} - $descricao", "description" => "N° Chamado no FreshDesk: $id\n\nDescrição:\n$descricao", "status" => "backlog"];
+        $task = ["name" => "#{$id} - $titulo", "description" => "N° Chamado no FreshDesk: $id\n\nDescrição:\n$descricaoDetalhada", "status" => "backlog"];
 
         //Cria o cliente http
         $curl = curl_init();
