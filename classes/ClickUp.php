@@ -34,7 +34,7 @@ class ClickUp
             $tarefas = json_decode($resposta, true);
 
             //Significa que acabaram as tasks em todas páginas
-            if(empty($tarefas['tasks'])){
+            if (empty($tarefas['tasks'])) {
                 break;
             }
 
@@ -50,15 +50,24 @@ class ClickUp
         //Não achou a task em nenhuma página retornada pela api do clickup
         return false;
     }
-    
-    public function criarTask($id, $titulo, $descricaoDetalhada)
-    {
-        $task = ["name" => "#{$id} - $titulo", "description" => "N° Chamado no FreshDesk: $id\n\nDescrição:\n$descricaoDetalhada", "status" => "backlog"];
 
-        //Cria o cliente http
+    public function criarTask($id, $titulo, $descricaoDetalhada, $solicitante, $customFields)
+    {
+        $task = [
+            "name" => "#{$id} - {$titulo}",
+            "description" => "N° Chamado no FreshDesk: {$id}\n" .
+                "Solicitante: " . $solicitante['name'] . "\n" .
+                "Descrição:\n{$descricaoDetalhada}",
+            "tags" => [
+                [
+                    "name" => $customFields['cf_ambiente']
+                ]
+            ],
+            "status" => "backlog"
+        ];
+
         $curl = curl_init();
 
-        //Configurando o cliente
         curl_setopt_array($curl, [
             CURLOPT_URL => "https://api.clickup.com/api/v2/list/{$this->listId}/task",
             CURLOPT_RETURNTRANSFER => true,

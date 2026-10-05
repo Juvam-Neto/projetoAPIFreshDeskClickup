@@ -30,11 +30,13 @@ fwrite($arquivoLog, date('Y-m-d H:i:s') . " - Rotina executada\n");
 
 foreach($chamadosAbertos as $chamado){
     if(!$clickUP->existeTask($chamado['id'])){
-
+        $solicitante = $freshDesk->getSolicitante($chamado['requester_id']);
         $clickUP->criarTask(
             $chamado['id'],
             $chamado['subject'],
-            $chamado['description_text'] 
+            $chamado['description_text'], 
+            $solicitante,
+            $chamado['custom_fields'] 
         );
         $contadorTaskCriada++;
         fwrite($arquivoLog, "Task de n° - " . $chamado['id'] . " criada com sucesso!\n");
