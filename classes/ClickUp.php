@@ -54,7 +54,7 @@ class ClickUp
     public function criarTask($id, $titulo, $descricaoDetalhada, $solicitante, $customFields)
     {
         //Verificando se a tag que vem é gestão para por no lugar mvgest
-        if(strcasecmp($customFields['cf_ambiente'], "gestão") === 0){
+        if(strcasecmp($customFields['cf_ambiente'], 'gestão') === 0){
             $customFields['cf_ambiente'] = 'mvgest';
         }
 
