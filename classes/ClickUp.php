@@ -58,6 +58,11 @@ class ClickUp
             $customFields['cf_ambiente'] = 'mvgest';
         }
 
+        //Verificando se a tag é "smart pos", para colocar "smartpos"
+        if(strcasecmp($customFields['cf_ambiente'], 'smart pos') === 0){
+            $customFields['cf_ambiente'] = 'smartpos';
+        }
+
         $task = [
             "name" => "#{$id} - {$titulo}",
             "description" => "N° Chamado no FreshDesk: {$id}\n" .
