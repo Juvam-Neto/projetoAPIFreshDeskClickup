@@ -4,7 +4,7 @@ class ClickUp
 {
     private $apiKeyClickUp;
     private $listId;
-
+    private $tagsQueNaoQuero = ['smartpos'];
 
     public function __construct()
     {
@@ -12,9 +12,25 @@ class ClickUp
         $this->listId = $_ENV['CLICKUP_LIST_ID'];
     }
 
-    public function existeTask($id)
+    public function existeTask($chamado, $freshDesk)
     {
+        if(strcasecmp($chamado['custom_fields']['cf_ambiente'], 'smart pos') === 0){
+           $chamado['custom_fields']['cf_ambiente'] = 'smartpos';
+        }
+
+        // Não importar chamados do ambiente smartpos, não adiciona no clickUP.
+          if (in_array($chamado['custom_fields']['cf_ambiente'], $this->tagsQueNaoQuero, true)) {
+            echo "ID Freshdesk: {$chamado['id']}\n";
+            echo "Domínio: {$chamado['domain']}\n";
+            echo "Tag: {$chamado['custom_fields']['cf_ambiente']} \n";
+            echo "Pertence a uma tag que não quero! Não entra! \n";
+            echo "-------------------------\n";
+            return true;
+        }
+
         $pagina = 0;
+        $dominios = $freshDesk->getDomain();
+
         while (true) {
             $curl = curl_init();
 
@@ -39,10 +55,43 @@ class ClickUp
             }
 
             foreach ($tarefas['tasks'] as $task) {
+                $nomeTask = $task['name'] ?? '';
+                $idChamado = $chamado['id'];
 
-                if (str_contains($task['name'], "#{$id} -")) {
+                $mesmoChamado = strpos($nomeTask, "#{$idChamado} -") === 0;
+
+                //Se não é o mesmo ID, pula pra comparar com a próxima tarefa do clickup
+                if(!$mesmoChamado){
+                    continue;
+                }
+
+                $mesmaOrigem = false;
+
+                foreach (($task['tags'] ?? []) as $tag) {
+                    echo "Tag encontrada: {$tag['name']}\n";
+
+                    if (
+                        ($chamado['domain'] === $dominios[0] && $tag['name'] === 'mvgest') ||
+                        ($chamado['domain'] === $dominios[1] && in_array($tag['name'], ['redeflex', 'grupocard'], true))
+                    ) {
+                        $mesmaOrigem = true;
+                        break;
+                    }
+                }
+
+                echo "ID Freshdesk: {$chamado['id']}\n";
+                echo "Nome ClickUp: {$task['name']}\n";
+                echo "Domínio: {$chamado['domain']}\n";
+                echo "Mesma origem: " . ($mesmaOrigem ? 'SIM' : 'NÃO') . "\n";
+
+                if ($mesmaOrigem) {
+                    echo "Entrou na  mesma origem e mesmo chamado! \n";
+                    echo "Não vai adicionar, pois já existe no clickUP! \n";
+                    echo "-------------------------\n";
                     return true;
                 }
+                echo "-------------------------\n";
+            
             }
             $pagina++;
         }
@@ -51,28 +100,33 @@ class ClickUp
         return false;
     }
 
-    public function criarTask($id, $titulo, $descricaoDetalhada, $solicitante, $customFields)
+    public function criarTask($chamado, $solicitante)
     {
         //Verificando se a tag que vem é gestão para por no lugar mvgest
-        if(strcasecmp($customFields['cf_ambiente'], 'gestão') === 0){
-            $customFields['cf_ambiente'] = 'mvgest';
+        if(strcasecmp($chamado['custom_fields']['cf_ambiente'], 'gestão') === 0){
+            if(!empty($chamado['custom_fields']['cf_empresa'])){
+                $chamado['custom_fields']['cf_ambiente'] = null;
+            }else{
+                $chamado['custom_fields']['cf_ambiente'] = 'mvgest';
+            }
         }
 
-        //Verificando se a tag é "smart pos", para colocar "smartpos"
-        if(strcasecmp($customFields['cf_ambiente'], 'smart pos') === 0){
-            $customFields['cf_ambiente'] = 'smartpos';
+        $tags = [];
+
+        foreach (['cf_ambiente', 'cf_empresa'] as $campo) {
+            $valor = $chamado['custom_fields'][$campo] ?? null;
+
+            if ($valor !== null && $valor !== '') {
+                $tags[] = ['name' => $valor];
+            }
         }
 
         $task = [
-            "name" => "#{$id} - {$titulo}",
-            "description" => "N° Chamado no FreshDesk: {$id}\n" .
+            "name" => "#{$chamado['id']} - {$chamado['subject']}",
+            "description" => "N° Chamado no FreshDesk: {$chamado['id']}\n" .
                 "Solicitante: " . $solicitante['name'] . "\n" .
-                "Descrição:\n{$descricaoDetalhada}",
-            "tags" => [
-                [
-                    "name" => $customFields['cf_ambiente']
-                ]
-            ],
+                "Descrição:\n{$chamado['description_text']}",
+            "tags" => $tags,
             "status" => "backlog"
         ];
 
