@@ -14,12 +14,14 @@ class ClickUp
 
     public function existeTask($chamado, $freshDesk)
     {
-        if(strcasecmp($chamado['custom_fields']['cf_ambiente'], 'smart pos') === 0){
-           $chamado['custom_fields']['cf_ambiente'] = 'smartpos';
+        $ambiente = $chamado['custom_fields']['cf_ambiente'] ?? '';
+        $ambiente = strtolower(trim($ambiente));
+        if ($ambiente === 'smart pos') {
+            $ambiente = 'smartpos';
         }
-
+        
         // Não importar chamados do ambiente smartpos, não adiciona no clickUP.
-          if (in_array($chamado['custom_fields']['cf_ambiente'], $this->tagsQueNaoQuero, true)) {
+          if (in_array($ambiente, $this->tagsQueNaoQuero, true)) {
             echo "ID Freshdesk: {$chamado['id']}\n";
             echo "Domínio: {$chamado['domain']}\n";
             echo "Tag: {$chamado['custom_fields']['cf_ambiente']} \n";
